@@ -46,5 +46,8 @@ abstract class Authentic<Session extends Object> {
   }
 
   /// Closes the authentication service.
+  ///
+  /// In real-world applications, this method should never be called
+  /// as the authentication service should be kept alive throughout the app lifecycle.
   Future<void> close();
 }
