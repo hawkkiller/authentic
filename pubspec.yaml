@@ -1,14 +1,9 @@
-name: authentic
-description: A starting point for Dart libraries or applications.
-version: 0.0.1
-repository: https://github.com/my_org/my_repo
-
-environment:
+name: root
+publish_to: none
+environment: 
   sdk: ^3.7.0
-
-dependencies:
-  # path: ^1.8.0
+workspace:  
+  - packages/authentic
 
 dev_dependencies:
-  lints: ^5.0.0
-  test: ^1.24.0
+  sizzle_lints: ^2.1.5

@@ -1,0 +1,9 @@
+name: authentic
+description: A contract for authentication that can be used for any service.
+version: 0.0.1
+repository: https://github.com/hawkkiller/authentic/packages/authentic
+
+environment:
+  sdk: ^3.7.0
+
+resolution: workspace
