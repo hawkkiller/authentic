@@ -1,3 +1,8 @@
+## 0.0.3
+
+- Update path to `authentic` in `pubspec.yaml` to `packages/authentic`.
+- Update README
+
 ## 0.0.2
 
 - Update LICENSE
