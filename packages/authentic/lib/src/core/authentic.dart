@@ -44,4 +44,7 @@ abstract class Authentic<Session extends Object> {
   Future<void> signOut() {
     throw UnimplementedError('signOut() is not implemented.');
   }
+
+  /// Closes the authentication service.
+  Future<void> close();
 }
