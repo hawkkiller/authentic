@@ -6,6 +6,7 @@ import 'package:prompts/prompts.dart' as prompts;
 import 'package:yaml/yaml.dart';
 import 'package:yaml_edit/yaml_edit.dart';
 
+/// Main entry point for the pub_manager CLI tool
 void main(List<String> arguments) {
   final runner = CommandRunner('pub_manager', 'A CLI tool for managing packages in a Dart monorepo')
     ..addCommand(PublishCommand());
@@ -18,9 +19,11 @@ void main(List<String> arguments) {
   });
 }
 
+/// Command to handle package publishing workflow
 class PublishCommand extends Command {
   @override
   final name = 'publish';
+
   @override
   final description = 'Update version, changelog, and dependencies for a package';
 
@@ -37,104 +40,54 @@ class PublishCommand extends Command {
   Future<void> run() async {
     final dryRun = argResults!['dry-run'] as bool;
 
-    // 1. Find all packages
-    final packages = findPackages();
+    // Phase 1: Discovery and selection
+    final packages = _findPackages();
     if (packages.isEmpty) {
       print('No packages found in packages/ directory.');
       return;
     }
 
-    // 2. Select package to publish
-    final selectedPackage = selectPackage(packages);
+    final selectedPackage = _selectPackage(packages);
     final packageInfo = PackageInfo.fromPath(selectedPackage);
 
-    // 3. Select new version
+    // Phase 2: Version management
     final currentVersion = packageInfo.version;
     print('Current version: $currentVersion');
-    final versionType = prompts.choose('Select version bump type:', [
-      'patch',
-      'minor',
-      'major',
-      'custom',
-    ], defaultsTo: 'patch');
+    final newVersion = _determineNewVersion(currentVersion);
 
-    String newVersion;
-    if (versionType == 'custom') {
-      newVersion = prompts.get('Enter new version:');
-    } else {
-      final parts = currentVersion.split('.');
-      if (parts.length != 3) {
-        print('Invalid version format: $currentVersion. Expected format: x.y.z');
-        return;
-      }
-
-      int major = int.parse(parts[0]);
-      int minor = int.parse(parts[1]);
-      int patch = int.parse(parts[2]);
-
-      if (versionType == 'patch') {
-        patch++;
-      } else if (versionType == 'minor') {
-        minor++;
-        patch = 0;
-      } else if (versionType == 'major') {
-        major++;
-        minor = 0;
-        patch = 0;
-      }
-
-      newVersion = '$major.$minor.$patch';
-    }
-
-    // 4. Get changelog entries
-    print('\nEnter changelog entries (one per line, empty line to finish):');
-    final changelogEntries = <String>[];
-    while (true) {
-      final entry = stdin.readLineSync()?.trim();
-      if (entry == null || entry.isEmpty) break;
-      changelogEntries.add('- $entry');
-    }
-
+    // Phase 3: Changelog management
+    final changelogEntries = _collectChangelogEntries();
     if (changelogEntries.isEmpty) {
       print('No changelog entries provided. Aborting.');
       return;
     }
 
-    // 5. Find all dependent packages
-    final dependentPackages = findDependentPackages(packages, packageInfo.name);
+    // Phase 4: Dependency analysis
+    final dependentPackages = _findDependentPackages(packages, packageInfo.name);
 
-    // 6. Show summary
-    print('\n=== Summary ===');
-    print('Package to publish: ${packageInfo.name}');
-    print('Current version: ${packageInfo.version}');
-    print('New version: $newVersion');
-    print('\nChangelog entries:');
-    for (final entry in changelogEntries) {
-      print(entry);
-    }
-    print('\nDependent packages to update:');
-    for (final pkg in dependentPackages) {
-      print('- ${path.basename(pkg)}');
-    }
+    // Phase 5: Summary and confirmation
+    _displaySummary(
+      packageName: packageInfo.name,
+      currentVersion: packageInfo.version,
+      newVersion: newVersion,
+      changelogEntries: changelogEntries,
+      dependentPackages: dependentPackages,
+    );
 
-    // 7. Confirm and apply changes
+    // Phase 6: Apply changes
     if (!dryRun) {
-      final confirm = prompts.getBool('Apply these changes?', defaultsTo: false);
-      if (!confirm) {
+      if (!_confirmChanges()) {
         print('Aborted by user.');
         return;
       }
 
-      // Update pubspec.yaml version
-      updatePubspecVersion(selectedPackage, newVersion);
-
-      // Update CHANGELOG.md
-      updateChangelog(selectedPackage, newVersion, changelogEntries);
-
-      // Update dependent packages
-      for (final pkg in dependentPackages) {
-        updateDependency(pkg, packageInfo.name, newVersion);
-      }
+      _applyChanges(
+        packagePath: selectedPackage,
+        packageName: packageInfo.name,
+        newVersion: newVersion,
+        changelogEntries: changelogEntries,
+        dependentPackages: dependentPackages,
+      );
 
       print('\nSuccessfully updated ${packageInfo.name} to version $newVersion');
     } else {
@@ -142,7 +95,8 @@ class PublishCommand extends Command {
     }
   }
 
-  List<String> findPackages() {
+  /// Find all packages in the packages/ directory
+  List<String> _findPackages() {
     final packagesDir = Directory('packages');
     if (!packagesDir.existsSync()) {
       print('Error: packages/ directory not found.');
@@ -162,7 +116,8 @@ class PublishCommand extends Command {
     return packages;
   }
 
-  String selectPackage(List<String> packages) {
+  /// Interactive package selection
+  String _selectPackage(List<String> packages) {
     final packageNames = packages.map((p) => path.basename(p)).toList();
 
     print('\nAvailable packages:');
@@ -180,7 +135,63 @@ class PublishCommand extends Command {
     return packages[packageNames.indexOf(selection)];
   }
 
-  List<String> findDependentPackages(List<String> allPackages, String packageName) {
+  /// Determine the new version based on user input
+  String _determineNewVersion(String currentVersion) {
+    final versionType = prompts.choose('Select version bump type:', [
+      'patch',
+      'minor',
+      'major',
+      'custom',
+    ], defaultsTo: 'patch');
+
+    if (versionType == 'custom') {
+      return prompts.get('Enter new version:');
+    }
+
+    final parts = currentVersion.split('.');
+    if (parts.length != 3) {
+      print('Invalid version format: $currentVersion. Expected format: x.y.z');
+      exit(1);
+    }
+
+    int major = int.parse(parts[0]);
+    int minor = int.parse(parts[1]);
+    int patch = int.parse(parts[2]);
+
+    switch (versionType) {
+      case 'patch':
+        patch++;
+        break;
+      case 'minor':
+        minor++;
+        patch = 0;
+        break;
+      case 'major':
+        major++;
+        minor = 0;
+        patch = 0;
+        break;
+    }
+
+    return '$major.$minor.$patch';
+  }
+
+  /// Collect changelog entries from user input
+  List<String> _collectChangelogEntries() {
+    print('\nEnter changelog entries (one per line, empty line to finish):');
+    final changelogEntries = <String>[];
+
+    while (true) {
+      final entry = stdin.readLineSync()?.trim();
+      if (entry == null || entry.isEmpty) break;
+      changelogEntries.add('- $entry');
+    }
+
+    return changelogEntries;
+  }
+
+  /// Find packages that depend on the specified package
+  List<String> _findDependentPackages(List<String> allPackages, String packageName) {
     final dependentPackages = <String>[];
 
     for (final pkg in allPackages) {
@@ -190,14 +201,14 @@ class PublishCommand extends Command {
       final content = pubspecFile.readAsStringSync();
       final yaml = loadYaml(content) as Map;
 
-      // Check dependencies
+      // Check regular dependencies
       final deps = yaml['dependencies'] as Map?;
       if (deps != null && deps.containsKey(packageName)) {
         dependentPackages.add(pkg);
         continue;
       }
 
-      // Check dev_dependencies
+      // Check dev dependencies
       final devDeps = yaml['dev_dependencies'] as Map?;
       if (devDeps != null && devDeps.containsKey(packageName)) {
         dependentPackages.add(pkg);
@@ -207,7 +218,57 @@ class PublishCommand extends Command {
     return dependentPackages;
   }
 
-  void updatePubspecVersion(String packagePath, String newVersion) {
+  /// Display summary of changes to be applied
+  void _displaySummary({
+    required String packageName,
+    required String currentVersion,
+    required String newVersion,
+    required List<String> changelogEntries,
+    required List<String> dependentPackages,
+  }) {
+    print('\n=== Summary ===');
+    print('Package to publish: $packageName');
+    print('Current version: $currentVersion');
+    print('New version: $newVersion');
+
+    print('\nChangelog entries:');
+    for (final entry in changelogEntries) {
+      print(entry);
+    }
+
+    print('\nDependent packages to update:');
+    for (final pkg in dependentPackages) {
+      print('- ${path.basename(pkg)}');
+    }
+  }
+
+  /// Confirm changes with user
+  bool _confirmChanges() {
+    return prompts.getBool('Apply these changes?', defaultsTo: false);
+  }
+
+  /// Apply all changes to files
+  void _applyChanges({
+    required String packagePath,
+    required String packageName,
+    required String newVersion,
+    required List<String> changelogEntries,
+    required List<String> dependentPackages,
+  }) {
+    // Update package version
+    _updatePubspecVersion(packagePath, newVersion);
+
+    // Update changelog
+    _updateChangelog(packagePath, newVersion, changelogEntries);
+
+    // Update dependencies in dependent packages
+    for (final pkg in dependentPackages) {
+      _updateDependency(pkg, packageName, newVersion);
+    }
+  }
+
+  /// Update version in pubspec.yaml
+  void _updatePubspecVersion(String packagePath, String newVersion) {
     final pubspecFile = File(path.join(packagePath, 'pubspec.yaml'));
     final content = pubspecFile.readAsStringSync();
     final editor = YamlEditor(content);
@@ -217,7 +278,8 @@ class PublishCommand extends Command {
     print('Updated version in pubspec.yaml');
   }
 
-  void updateChangelog(String packagePath, String newVersion, List<String> entries) {
+  /// Update or create CHANGELOG.md
+  void _updateChangelog(String packagePath, String newVersion, List<String> entries) {
     final changelogFile = File(path.join(packagePath, 'CHANGELOG.md'));
     String content = '';
 
@@ -226,22 +288,20 @@ class PublishCommand extends Command {
     }
 
     final timestamp = DateTime.now().toUtc().toString().split(' ')[0]; // YYYY-MM-DD
-    final newEntry = '''
-## $newVersion - $timestamp
+    final newEntry = '''## $newVersion - $timestamp
 
-${entries.join('\n')}
-''';
+${entries.join('\n')}''';
 
     if (content.isEmpty) {
-      // Create new changelog if it doesn't exist
+      // Create new changelog
       content = "# Changelog\n\n$newEntry";
     } else if (content.trim().startsWith('# ')) {
-      // If file starts with a header, insert after the first line
+      // Insert after header
       final lines = content.split('\n');
       lines.insert(1, '\n$newEntry');
       content = lines.join('\n');
     } else {
-      // Otherwise, insert at the beginning
+      // Insert at beginning
       content = '$newEntry\n\n$content';
     }
 
@@ -249,22 +309,24 @@ ${entries.join('\n')}
     print('Updated CHANGELOG.md');
   }
 
-  void updateDependency(String packagePath, String dependencyName, String newVersion) {
+  /// Update dependency version in a package
+  void _updateDependency(String packagePath, String dependencyName, String newVersion) {
     final pubspecFile = File(path.join(packagePath, 'pubspec.yaml'));
     final content = pubspecFile.readAsStringSync();
     final editor = YamlEditor(content);
+    final packageBaseName = path.basename(packagePath);
 
-    // Try updating in dependencies
     try {
+      // Try updating in dependencies section
       editor.update(['dependencies', dependencyName], '^$newVersion');
-      print('Updated $dependencyName dependency in ${path.basename(packagePath)}');
+      print('Updated $dependencyName dependency in $packageBaseName');
     } catch (e) {
-      // Try updating in dev_dependencies
       try {
+        // Try updating in dev_dependencies section
         editor.update(['dev_dependencies', dependencyName], '^$newVersion');
-        print('Updated $dependencyName dev_dependency in ${path.basename(packagePath)}');
+        print('Updated $dependencyName dev_dependency in $packageBaseName');
       } catch (e) {
-        print('Could not update dependency in ${path.basename(packagePath)}');
+        print('Could not update dependency in $packageBaseName');
       }
     }
 
@@ -272,12 +334,14 @@ ${entries.join('\n')}
   }
 }
 
+/// Class to hold package information
 class PackageInfo {
   final String name;
   final String version;
 
   PackageInfo(this.name, this.version);
 
+  /// Create PackageInfo from a package path
   factory PackageInfo.fromPath(String packagePath) {
     final pubspecFile = File(path.join(packagePath, 'pubspec.yaml'));
     final content = pubspecFile.readAsStringSync();
