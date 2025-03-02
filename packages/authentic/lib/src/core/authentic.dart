@@ -8,7 +8,7 @@ abstract class Authentic {
   /// Stream of session changes.
   ///
   /// Emits when a user signs in, signs out, or the session is refreshed.
-  Stream<AuthenticSession> get sessionStream;
+  Stream<AuthenticSession?> get sessionStream;
 
   /// Initializes the authentication service.
   ///

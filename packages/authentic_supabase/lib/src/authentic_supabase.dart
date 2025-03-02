@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:authentic/authentic.dart';
 import 'package:supabase/supabase.dart';
 
@@ -11,59 +13,68 @@ class AuthenticSupabase implements Authentic {
   /// It should already be initialized when passed to this class.
   final SupabaseClient supabaseClient;
 
+  AuthenticSession? _session;
+  final _sessionController = StreamController<AuthenticSession?>.broadcast();
+
   @override
-  Future<void> close() {
-    // TODO: implement close
-    throw UnimplementedError();
+  AuthenticSession? get session => _session;
+
+  @override
+  Stream<AuthenticSession?> get sessionStream => _sessionController.stream;
+
+  @override
+  Future<void> initialize() async {
+    if (supabaseClient.auth.currentSession?.accessToken case final token?) {
+      _session = AuthenticSession(accessToken: token);
+    }
   }
 
   @override
-  Future<void> initialize() {
-    // TODO: implement initialize
-    throw UnimplementedError();
+  Future<void> close() async {
+    await _sessionController.close();
   }
 
   @override
-  Future<void> refreshSession() {
-    // TODO: implement refreshSession
-    throw UnimplementedError();
+  Future<void> signUpWithEmailAndPassword(String email, String password) async {
+    await supabaseClient.auth.signUp(password: password, email: email);
+    _updateSession();
   }
 
   @override
-  // TODO: implement session
-  Session? get session => throw UnimplementedError();
-
-  @override
-  // TODO: implement sessionStream
-  Stream<Session> get sessionStream => throw UnimplementedError();
-
-  @override
-  Future<void> signInWithApple() {
-    // TODO: implement signInWithApple
-    throw UnimplementedError();
+  Future<void> signInWithEmailAndPassword(String email, String password) async {
+    await supabaseClient.auth.signInWithPassword(email: email, password: password);
+    _updateSession();
   }
 
   @override
-  Future<void> signInWithEmailAndPassword(String email, String password) {
-    // TODO: implement signInWithEmailAndPassword
-    throw UnimplementedError();
+  Future<void> refreshSession() async {
+    await supabaseClient.auth.refreshSession();
+    _updateSession();
   }
 
   @override
-  Future<void> signInWithGoogle() {
-    // TODO: implement signInWithGoogle
-    throw UnimplementedError();
+  Future<void> signInWithGoogle() async {
+    throw UnimplementedError('Sign in with Google is not implemented yet.');
   }
 
   @override
-  Future<void> signOut() {
-    // TODO: implement signOut
-    throw UnimplementedError();
+  Future<void> signInWithApple() async {
+    throw UnimplementedError('Sign in with Apple is not implemented yet.');
   }
 
   @override
-  Future<void> signUpWithEmailAndPassword(String email, String password) {
-    // TODO: implement signUpWithEmailAndPassword
-    throw UnimplementedError();
+  Future<void> signOut() async {
+    await supabaseClient.auth.signOut();
+  }
+
+  void _updateSession() {
+    final session = supabaseClient.auth.currentSession;
+    if (session == null) {
+      _session = null;
+    } else {
+      _session = AuthenticSession(accessToken: session.accessToken);
+    }
+
+    _sessionController.add(_session);
   }
 }

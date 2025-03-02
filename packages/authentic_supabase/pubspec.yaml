@@ -9,7 +9,7 @@ environment:
 resolution: workspace
 
 dependencies:
-  authentic: ^0.0.5
+  authentic: ^0.0.6
   supabase: ^2.6.3
 
 dev_dependencies:

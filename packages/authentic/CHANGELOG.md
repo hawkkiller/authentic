@@ -1,3 +1,7 @@
+## 0.0.6 - 2025-03-02
+
+- Updated contract
+
 ## 0.0.5 - 2025-03-02
 
 - Rename Session to AuthenticSession
