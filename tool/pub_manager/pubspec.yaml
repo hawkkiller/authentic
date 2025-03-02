@@ -1,6 +1,7 @@
 name: pub_manager
-description: A sample command-line application with basic argument parsing.
+description: Command-line tool to manage versioning of Dart packages
 version: 0.0.1
+publish_to: none
 # repository: https://github.com/my_org/my_repo
 
 environment:
