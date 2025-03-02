@@ -5,9 +5,9 @@
 /// 
 /// For example, in a JWT-based authentication system, this could
 /// contain the access token, to make authenticated requests to the server.
-class Session {
+class AuthenticSession {
   /// Creates a new session.
-  Session({required this.accessToken});
+  AuthenticSession({required this.accessToken});
 
   /// The access token.
   final String accessToken;

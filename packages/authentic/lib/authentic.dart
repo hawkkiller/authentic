@@ -2,4 +2,4 @@
 library;
 
 export 'src/core/authentic.dart';
-export 'src/model/session.dart';
+export 'src/model/authentic_session.dart';

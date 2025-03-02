@@ -1,6 +1,16 @@
 import 'package:authentic/authentic.dart';
+import 'package:supabase/supabase.dart';
 
+/// An implementation of [Authentic] that uses Supabase as the backend.
 class AuthenticSupabase implements Authentic {
+  /// Creates a new instance of [AuthenticSupabase].
+  AuthenticSupabase(this.supabaseClient);
+
+  /// The Supabase client.
+  ///
+  /// It should already be initialized when passed to this class.
+  final SupabaseClient supabaseClient;
+
   @override
   Future<void> close() {
     // TODO: implement close

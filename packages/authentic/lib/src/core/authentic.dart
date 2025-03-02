@@ -1,14 +1,14 @@
-import 'package:authentic/src/model/session.dart';
+import 'package:authentic/src/model/authentic_session.dart';
 
 /// A class that handles authentication operations for an application.
 abstract class Authentic {
   /// The current active session, if any.
-  Session? get session;
+  AuthenticSession? get session;
 
   /// Stream of session changes.
   ///
   /// Emits when a user signs in, signs out, or the session is refreshed.
-  Stream<Session> get sessionStream;
+  Stream<AuthenticSession> get sessionStream;
 
   /// Initializes the authentication service.
   ///

@@ -1,3 +1,7 @@
+## 0.0.5 - 2025-03-02
+
+- Rename Session to AuthenticSession
+
 ## 0.0.4 - 2025-03-02
 
 - Added Session model with access token
