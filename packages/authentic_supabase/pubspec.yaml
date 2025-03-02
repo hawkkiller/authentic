@@ -1,5 +1,5 @@
 name: authentic_supabase
-description: A sample command-line application.
+description: A package that provides a Supabase implementation for Authentic.
 version: 0.0.1
 repository: https://github.com/hawkkiller/authentic/tree/main/packages/authentic_supabase
 
