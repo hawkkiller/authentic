@@ -1,6 +1,6 @@
 name: authentic
 description: A contract for authentication that can be used for any service.
-version: 0.0.3
+version: 0.0.4
 repository: https://github.com/hawkkiller/authentic/tree/main/packages/authentic
 
 environment:

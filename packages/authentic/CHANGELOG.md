@@ -1,11 +1,15 @@
+## 0.0.4 - 2025-03-02
+
+- Added Session model with access token
+
 ## 0.0.3
 
-- Update path to `authentic` in `pubspec.yaml` to `packages/authentic`.
-- Update README
+- Updated path to `authentic` in `pubspec.yaml` to `packages/authentic`.
+- Updated README
 
 ## 0.0.2
 
-- Update LICENSE
+- Updated LICENSE
 
 ## 0.0.1
 
