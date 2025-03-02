@@ -90,6 +90,13 @@ class PublishCommand extends Command {
       );
 
       print('\nSuccessfully updated ${packageInfo.name} to version $newVersion');
+
+      // Phase 7: Publish packages
+      if (dependentPackages.isNotEmpty) {
+        _handlePackagePublishing(selectedPackage, dependentPackages);
+      } else {
+        _handlePackagePublishing(selectedPackage, []);
+      }
     } else {
       print('\nDry run completed. No changes applied.');
     }
@@ -331,6 +338,67 @@ ${entries.join('\n')}''';
     }
 
     pubspecFile.writeAsStringSync(editor.toString());
+  }
+
+  /// Handle publishing of packages
+  void _handlePackagePublishing(String mainPackagePath, List<String> dependentPackages) {
+    final mainPackageName = path.basename(mainPackagePath);
+
+    // Ask to publish the main package
+    final publishMain = prompts.getBool(
+      '\nPublish the main package ($mainPackageName)?',
+      defaultsTo: true,
+    );
+    if (publishMain) {
+      _publishPackage(mainPackagePath);
+    }
+
+    if (dependentPackages.isEmpty) return;
+
+    // For dependent packages, let user manually select which ones to publish
+    print('\nSelect dependent packages to publish:');
+    final selectedPackages = <String>[];
+
+    for (int i = 0; i < dependentPackages.length; i++) {
+      final packageName = path.basename(dependentPackages[i]);
+      final shouldPublish = prompts.getBool('Publish $packageName?', defaultsTo: false);
+
+      if (shouldPublish) {
+        selectedPackages.add(dependentPackages[i]);
+      }
+    }
+
+    if (selectedPackages.isEmpty) {
+      print('No dependent packages selected for publishing.');
+      return;
+    }
+
+    for (final pkgPath in selectedPackages) {
+      _publishPackage(pkgPath);
+    }
+  }
+
+  /// Publish a single package
+  void _publishPackage(String packagePath) {
+    final packageName = path.basename(packagePath);
+    print('\nPublishing $packageName...');
+
+    try {
+      final result = Process.runSync('dart', [
+        'pub',
+        'publish',
+        '--force',
+      ], workingDirectory: packagePath);
+
+      if (result.exitCode == 0) {
+        print('Successfully published $packageName');
+      } else {
+        print('Failed to publish $packageName');
+        print(result.stderr);
+      }
+    } catch (e) {
+      print('Error publishing $packageName: $e');
+    }
   }
 }
 
