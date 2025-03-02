@@ -24,9 +24,7 @@ class AuthenticSupabase implements Authentic {
 
   @override
   Future<void> initialize() async {
-    if (supabaseClient.auth.currentSession?.accessToken case final token?) {
-      _session = AuthenticSession(accessToken: token);
-    }
+    _updateSession();
   }
 
   @override
