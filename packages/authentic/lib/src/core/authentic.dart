@@ -1,7 +1,7 @@
+import 'package:authentic/src/model/session.dart';
+
 /// A class that handles authentication operations for an application.
-///
-/// The generic type [Session] represents the user session object.
-abstract class Authentic<Session extends Object> {
+abstract class Authentic {
   /// The current active session, if any.
   Session? get session;
 

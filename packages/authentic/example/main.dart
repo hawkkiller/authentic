@@ -2,23 +2,9 @@ import 'dart:async';
 
 import 'package:authentic/authentic.dart';
 
-class AuthenticInMemory extends Authentic<Session> {
+class AuthenticInMemory extends Authentic {
   final _sessionController = StreamController<Session>.broadcast();
   Session? _session;
-
-  @override
-  Future<void> initialize() async {}
-
-  @override
-  Session? get session => _session;
-
-  set session(Session? value) {
-    _session = value;
-    _sessionController.add(_session!);
-  }
-
-  @override
-  Stream<Session> get sessionStream => _sessionController.stream;
 
   @override
   Future<void> close() async {
@@ -26,18 +12,18 @@ class AuthenticInMemory extends Authentic<Session> {
   }
 
   @override
-  Future<void> signInWithEmailAndPassword(String email, String password) async {
-    session = Session(email);
+  Future<void> initialize() {
+    return Future.value();
   }
 
   @override
-  Future<void> signOut() async {
-    session = null;
+  Session? get session => _session;
+
+  @override
+  Stream<Session> get sessionStream => _sessionController.stream;
+
+  @override
+  Future<void> signInWithEmailAndPassword(String email, String password) async {
+    _session = Session(accessToken: 'access_token');
   }
-}
-
-class Session {
-  Session(this.username);
-
-  final String username;
 }

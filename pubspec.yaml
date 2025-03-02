@@ -4,6 +4,7 @@ environment:
   sdk: ^3.7.0
 workspace:  
   - packages/authentic
+  - packages/authentic_supabase
 
 dev_dependencies:
   sizzle_lints: ^2.1.5

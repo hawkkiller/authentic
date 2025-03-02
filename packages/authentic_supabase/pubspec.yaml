@@ -1,0 +1,16 @@
+name: authentic_supabase
+description: A sample command-line application.
+version: 0.0.1
+repository: https://github.com/hawkkiller/authentic/tree/main/packages/authentic_supabase
+
+environment:
+  sdk: ^3.7.0
+
+resolution: workspace
+
+dependencies:
+  authentic: ^0.0.3
+  supabase: ^2.6.3
+
+dev_dependencies:
+  test: ^1.25.15
